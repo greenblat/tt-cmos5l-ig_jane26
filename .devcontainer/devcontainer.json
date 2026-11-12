@@ -1,0 +1,31 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.183.0/containers/ubuntu
+{
+  "name": "Tiny Tapeout IHP SG13CMOS5L (8x4) Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "runArgs": [
+    "--memory=16GB"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": ["mshr-h.veriloghdl", "surfer-project.surfer"]
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "azureDnsAutoDetection": true,
+      "version": "latest",
+      "dockerDashComposeVersion": "none"
+    }
+  },
+  "containerEnv": { "PDK_ROOT": "/ttsetup/pdk", "PDK": "ihp-sg13cmos5l" },
+  "postCreateCommand": "echo 'source /ttsetup/venv/bin/activate' >> ~/.bashrc",
+  "postStartCommand": "/ttsetup/copy_tt_support_tools.sh"
+}

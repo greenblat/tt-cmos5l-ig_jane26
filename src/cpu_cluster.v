@@ -30,7 +30,6 @@ module cpu_cluster (input clk, input rst_n
 
     ,output cpu_rd
     ,output [15:0] cpu_addr
-    ,output [31:0] cpu_wdata
     ,input  [31:0] cpu_rdata
 
     ,input  prog_vld
@@ -152,7 +151,6 @@ fplp_cpu  cpu_top (
 
     ,.cpu_addr(cpu_addr_a)
     ,.cpu_rd(cpu_rd)
-    ,.cpu_wdata(cpu_wdata)
     ,.cpu_rdata(cpu_rdata8)
 
     ,.paddr(paddr)

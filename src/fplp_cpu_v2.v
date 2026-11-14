@@ -55,7 +55,6 @@ module fplp_cpu (input clk, input rst_n
 
     ,output     cpu_rd
     ,output     [15:0] cpu_addr
-    ,output reg [31:0] cpu_wdata
     ,input  [7:0] cpu_rdata
 
     ,output reg [3:0]   cpu_thread

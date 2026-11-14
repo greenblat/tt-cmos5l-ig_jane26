@@ -211,7 +211,6 @@ fplp_rgf fplp_rgf (.pclk(clk),.presetn(rst_n)
 
 wire [31:0] qq;
 wire [15:0] cpu_addr;
-wire [31:0] cpu_wdata;
 wire cpu_rd;
 
 wire  [3:0] pin_event;
@@ -243,7 +242,6 @@ cpu_cluster cpu_cluster (
 
     ,.cpu_rd(cpu_rd)
     ,.cpu_addr(cpu_addr)
-    ,.cpu_wdata(cpu_wdata)
     ,.cpu_rdata(qq)
 
     ,.prog_vld(prog_vld)
@@ -268,7 +266,7 @@ wire cen = ~(cpu_rd || drct_access);
 // wire [31:0] wmask = drct_access ? 32'hffffffff : cpu_wmask ;
 wire [31:0] wmask = 32'hffffffff ;
 wire [13:0] aa = drct_access ? drct_addr : cpu_addr ;
-wire [31:0] dd = drct_access ? drct_wdata : cpu_wdata;
+wire [31:0] dd = drct_wdata;
 
 assign drct_rdata = qq;
 

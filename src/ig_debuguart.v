@@ -1,0 +1,352 @@
+
+
+
+module ig_debuguart #(parameter BAUDRATE=244) (
+     input clk ,input reset_n
+    ,input rxd, output txd
+
+
+    ,output reg [31:0] s_paddr
+    ,output reg [31:0] s_pwdata
+    ,output reg    s_psel
+    ,output        s_penable
+    ,output reg        s_pwrite
+    ,output [3:0]  s_pstrb
+    ,input         s_pready
+    ,input         s_pslverr
+    ,input  [31:0] s_prdata
+
+    ,output uart2extram
+    ,output [31:0] drct_addr
+    ,output  drct_rd
+    ,output [31:0] drct_wdata
+    ,output  drct_wr
+    ,input   [31:0] drct_rdata
+
+    ,input interrupt
+
+
+    ,output read_trace
+    ,input [15:0] xevent
+    ,input [19:0] trace_ptr
+    ,output tracer_rptr_write
+
+    ,output la_restart
+    ,output la_read
+    ,output [3:0] la_what
+    ,input [31:0] la_dout
+
+);
+
+reg [15:0] max_rx_sync;
+reg [15:0] max_tx_sync;
+reg [15:0] max_echo;
+reg [15:0] max_prdata;
+
+wire rst_n0;
+wire uart_rst_n;
+wire echo_on;
+synchronizer_level sync0 (.clk(clk),.rst_n(reset_n),.din(1'b1),.dout(rst_n0));
+reg [3:0] rstcnt;
+always @(posedge clk or negedge rst_n0) begin
+    if (!rst_n0) begin
+        rstcnt <= 0;
+    end else begin
+        rstcnt <= rstcnt+(rstcnt!=15);
+    end
+end
+wire rst_n = rstcnt==15;
+        
+
+
+
+assign s_pstrb  = 4'hf;
+
+wire uart2swiss = (drct_wr || drct_rd) && (drct_addr[31:28] == 0);
+wire readFromSwiss =  drct_rd && ((drct_addr[31:28] == 14) || (drct_addr[31:28] < 5));
+
+assign uart2extram = (drct_wr || drct_rd) && (drct_addr[31:28] == 5);
+
+wire uart2interrupt = (drct_wr || drct_rd) && (drct_addr[31:28] == 6);
+wire uart2tracer    = (drct_wr || drct_rd) && (drct_addr[31:28] == 7);
+wire uart2logicana    = (drct_wr || drct_rd) && (drct_addr[31:28] == 8);
+
+
+wire tracer_fifo_write = drct_rd  && uart2tracer ;
+assign tracer_rptr_write = drct_wr && uart2tracer;
+assign read_trace = tracer_fifo_write && (drct_addr[3:0] == 0);
+
+assign la_read = uart2logicana && drct_rd;
+assign la_what = la_read ? drct_addr[3:0] : 0 ;
+assign la_restart = uart2logicana && drct_wr;
+
+
+
+
+reg [31:0] qqdata;
+
+
+
+
+reg sticky_interrupt;
+reg uart2extram_d1;
+reg uart2extram_d2;
+always @(posedge clk) begin
+    if (!rst_n) begin
+        sticky_interrupt <= 0;
+        qqdata <= 0;
+        uart2extram_d1 <= 0;
+        uart2extram_d2 <= 0;
+    end else begin
+        uart2extram_d1 <= uart2extram && drct_rd;
+        uart2extram_d2 <= uart2extram_d1;
+        if (uart2extram_d1) qqdata <= drct_rdata;
+        if (interrupt) 
+            sticky_interrupt <= 1;
+        else if (uart2interrupt)
+            sticky_interrupt <= 0;
+    end
+end
+
+reg first; 
+reg [31:0] address1; 
+reg [31:0] wdata1; 
+reg [31:0] write1; 
+
+reg[7:0] waiting_period; initial waiting_period = 16;
+reg [7:0] waiting;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        waiting <= 0;
+        s_paddr <= 0;
+        s_pwdata <= 0;
+        s_pwrite <= 0;
+        s_psel <= 0;
+    end else if (waiting>0) begin
+        waiting <= waiting - 1;
+    end else begin
+        if (uart2swiss) begin
+//            waiting <= waiting_period;
+            s_paddr <= drct_addr;
+            s_pwdata <= drct_wdata;
+            s_pwrite <= drct_wr;
+            s_psel <= 1;
+        end else begin
+            s_paddr <= 0;
+            s_pwdata <= 0;
+            s_pwrite <= 0;
+            s_psel <= 0;
+        end
+    end
+end
+wire s_pready_int = (waiting==0) && !uart2swiss;
+assign s_penable = s_psel;
+
+    
+wire softreset = 0;
+
+
+
+wire [31:0] rdata;
+wire  readout_rdata;
+wire rdata_fifo_empty;
+
+
+
+
+
+wire [7:0] uart_status;
+wire [7:0] rxdata,txdata;
+wire write_tx,tx_empty,rx_valid,read_rx;
+wire write_tx_sys;
+wire [7:0] uart_control = 8'h50;
+wire [15:0] uart_baudrate;
+
+
+synchronizer_rst_n sync_rst_uart (.clk(clk),.rst_n(rst_n),.rst_n_synced(uart_rst_n));
+wire [7:0] rxdata_sys,txdata_sys;
+
+
+wire [15:0] rx_sync_fifo_count;
+wire [15:0] tx_sync_fifo_count;
+wire [15:0] echo_fifo_count;
+wire [15:0] prdata_fifo_count;
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        max_rx_sync <= 0;
+        max_tx_sync <= 0;
+        max_echo <= 0;
+        max_prdata <= 0;
+    end else begin
+        if (rx_sync_fifo_count> max_rx_sync) max_rx_sync <= rx_sync_fifo_count;
+        if (tx_sync_fifo_count>max_tx_sync) max_tx_sync <= tx_sync_fifo_count;
+        if (echo_fifo_count>max_echo) max_echo <= echo_fifo_count;
+        if (prdata_fifo_count>max_prdata) max_prdata <= prdata_fifo_count;
+    end
+end
+
+wire rx_sync_full;
+wire panic_rx_fifo;
+wire rx_sync_empty;
+syncfifo_v2 #(.WID(8),.DEPTH(32)) rx_sync_fifo (
+    .clk(clk),.rst_n(rst_n)
+   ,.vldin(rx_valid),.din(rxdata)
+   ,.readout(!rx_sync_empty),.dout(rxdata_sys)
+   ,.empty(rx_sync_empty),.full(rx_sync_full)
+   ,.count(rx_sync_fifo_count)
+   ,.softreset(softreset)
+   ,.overflow(panic_rx_fifo)
+);
+
+wire panic_tx_fifo;
+wire tx_sync_empty;
+assign write_tx = tx_empty && !tx_sync_empty;
+syncfifo_v2 #(.WID(8),.DEPTH(32)) tx_sync_fifo (
+    .clk(clk),.rst_n(rst_n)
+   ,.vldin(write_tx_sys),.din(txdata_sys)
+   ,.readout(write_tx),.dout(txdata)
+   ,.empty(tx_sync_empty),.full(tx_sync_full)
+   ,.count(tx_sync_fifo_count)
+   ,.softreset(softreset)
+   ,.overflow(panic_tx_fifo)
+);
+
+ig_uart ig_uart (
+   .clk(clk)
+  ,.rst_n(uart_rst_n)
+
+  ,.txd(txd) ,.rxd(rxd)
+
+  ,.control(uart_control[7:0])
+  ,.status(uart_status[7:0])
+  ,.baudrate(uart_baudrate[15:0])
+  ,.read_rx(rx_valid)
+
+  ,.write_tx(write_tx)
+  ,.txdata(txdata[7:0])
+  ,.tx_empty(tx_empty)
+
+  ,.rxdata(rxdata)
+  ,.rx_valid(rx_valid)
+
+    ,.txbitstart(),.tx_active(),.tx_shift()
+);
+
+wire wr_baud;
+reg announce = 1;
+reg [3:0] evenann;
+reg [15:0] between;
+reg [23:0] more_between;
+wire echo_fifo_empty,echo_fifo_full,readout_echo;
+wire send_announce = echo_fifo_empty && announce && (between == 0) && (more_between==0);
+always @(posedge clk) begin
+    if (!rst_n) begin
+        announce <= 1;
+        evenann <= 0;
+        between <= 0;
+        more_between <= 0 ;
+    end else begin
+        if (!rx_sync_empty) begin
+            announce <= 0;
+            more_between <= 0;
+            between <= 0;
+        end else if (wr_baud)  begin 
+            announce <= 1;
+            more_between <= 0;
+            between <= 0;
+        end else if (send_announce) begin
+            evenann <= (evenann == 8) ? 0 : (evenann+1);
+            between <=  uart_baudrate * 256;
+            if (evenann == 8) more_between <= uart_baudrate * 8196;
+        end else begin
+            if (announce && (between>0)) between <= between - 1 ;
+            if (more_between>0) more_between <= more_between-1;
+        end
+    end
+end
+
+wire [8:0] [7:0]  RTU26 = " 62UTR**\n";
+
+wire [7:0] echobyte;
+wire [7:0] charA = RTU26[evenann];
+
+wire rx_valid_ann = echo_on && ((!rx_sync_empty) || send_announce);
+wire [7:0] rxdata_ann = (!rx_sync_empty) ? rxdata_sys : charA;
+
+syncfifo_v2 #(.WID(8),.DEPTH(32)) echo_fifo (
+    .clk(clk),.rst_n(rst_n)
+   ,.vldin(rx_valid_ann),.din(rxdata_ann)
+   ,.readout(readout_echo),.dout(echobyte)
+   ,.empty(echo_fifo_empty),.full(echo_fifo_full)
+   ,.count(echo_fifo_count)
+   ,.softreset(softreset)
+   ,.overflow()
+);
+
+wire panic1 = echo_fifo_full && rx_valid_ann;
+
+wire prdata_fifo_write = s_pready_int && s_penable && !s_pwrite;
+wire [31:0] rpacket;
+
+wire [31:0] prdata_fifo_din = 
+    (uart2logicana) ?  la_dout :
+    (tracer_fifo_write && (drct_addr[3:0] == 0)) ? {16'h5000,xevent} : 
+    tracer_fifo_write ? {8'h30,2'b0,trace_ptr[19:10],2'b0,trace_ptr[9:0] } : 
+    uart2extram_d2 ? qqdata : 
+    s_prdata;
+
+wire prdata_fifo_vldin  = prdata_fifo_write || uart2extram_d2 || tracer_fifo_write ||  la_read;
+
+syncfifo_v2 #(.WID(32),.DEPTH(32)) prdata_fifo (
+    .clk(clk),.rst_n(rst_n)
+   ,.vldin(prdata_fifo_vldin),.din(prdata_fifo_din)
+   ,.readout(readout_rdata),.dout(rpacket)
+   ,.empty(rdata_fifo_empty),.full(rdata_fifo_full)
+   ,.count(prdata_fifo_count)
+   ,.softreset(softreset)
+   ,.overflow()
+);
+wire panic0 = rdata_fifo_full && prdata_fifo_write;
+
+wire [7:0] tx_rdata;
+wire rdata_txvalid,rdata_txtaken;
+tx_sender #(.WID(32)) tx_sender (
+    .clk(clk),.rst_n(rst_n)
+    ,.vldin(!rdata_fifo_empty)
+    ,.din(rpacket)
+    ,.done(readout_rdata)
+    ,.txdata(tx_rdata)
+    ,.txvalid(rdata_txvalid)
+    ,.txtaken(rdata_txtaken)
+);
+
+
+assign rdata_txtaken = !rx_sync_full && (tx_sync_fifo_count < 2040);
+assign write_tx_sys = (rdata_txvalid && rdata_txtaken) || (rdata_txtaken && !echo_fifo_empty);
+assign txdata_sys = rdata_txvalid ? tx_rdata : echobyte ;
+assign readout_echo = !rx_sync_full && !rdata_txvalid  && !echo_fifo_empty;
+
+
+
+wire [31:0] status = 0; // ILIA TBD
+
+dbgparser #(.BAUDRATE(BAUDRATE),.DWID(32)) dbgparser (
+     .clk(clk)
+    ,.drct_addr(drct_addr[31:0])
+    ,.drct_rd(drct_rd)
+    ,.drct_wdata(drct_wdata)
+    ,.drct_wr(drct_wr)
+    ,.rst_n(rst_n)
+    ,.rx_valid(!rx_sync_empty)
+    ,.rxdata(rxdata_sys[7:0])
+    ,.uart_baudrate(uart_baudrate)
+    ,.wr_baud(wr_baud)
+    ,.echo_on(echo_on)
+    ,.softreset(softreset)
+    ,.status(status)
+);
+
+wire [63:0]  sign_version = 64'h000b144d13210923 ;
+endmodule
+

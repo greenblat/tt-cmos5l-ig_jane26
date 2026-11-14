@@ -16,8 +16,42 @@ module tt_um_greenblat_protocoler (
     input  wire       rst_n     // reset_n - low to reset
 );
 
+wire [31:0] leds;
+wire [11:0] pin_in;
+wire [11:0] pin_out;
+wire [11:0] tri_out;
+
+wire rxd_i = ui_in[0];
+wire txd_o;
+assign uo_out[0] = txd_o;
+assign uo_out[4:1] = leds[3:0];
+assign uo_out[7:5] = pin_out[11:9];
+assign pin_in[11:8] = ui_in[7:4];
+
+assign uio_out = pin_out[7:0];
+assign pin_in[7:0] = uio_in[7:0];
+assign uio_oe =  tri_out;
+
+fplp_cluster #(.BAUDRATE(50)) fplp_cluster (
+     .clk(clk)
+    ,.leds(leds[31:0])
+    ,.pin_in(pin_in[11:0])
+    ,.pin_out(pin_out[11:0])
+    ,.tri_out(tri_out[11:0])
+    ,.rst_n(rst_n)
+    ,.rxd_i(rxd_i)
+    ,.txd_o(txd_o)
+);
+
+
+
+
+
+
+
+
   // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
+//  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
   assign uio_out = 0;
   assign uio_oe  = 0;
 

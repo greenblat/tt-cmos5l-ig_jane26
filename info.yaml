@@ -19,6 +19,27 @@ project:
   # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
   source_files:
     - "project.v"
+    - "io_cluster.v"
+    - "iopin.v"
+    - "synchronizer_level.v"
+    - "syncfifo.v"
+    - "syncfifo_v2.v"
+    - "fplp_cluster.v"
+    - "ig_debuguart.v"
+    - "dbgparser.v"
+    - "tx_sender.v"
+    - "ig_uart.v"
+    - "synchronizer_rst_n.v"
+    - "ram_32bit_4096addr.v"
+    - "rgf/fplp_rgf.v"
+    - "cpu_cluster.v"
+    - "doorbells.v"
+    - "fplp_cpu_v2.v"
+    - "fplp_stack.v"
+    - "fplpx_decoder.v"
+    - "variables.v"
+    - "posedge_detect.v"
+
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).

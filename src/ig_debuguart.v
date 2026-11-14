@@ -1,4 +1,4 @@
-
+`default_nettype wire
 
 
 module ig_debuguart #(parameter BAUDRATE=244) (

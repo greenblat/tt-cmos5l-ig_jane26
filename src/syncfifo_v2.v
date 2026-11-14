@@ -1,3 +1,4 @@
+`default_nettype wire
 module syncfifo_v2 #(parameter WID = 32, parameter DEPTH=8, parameter AWID = $clog2(DEPTH))(
      input clk,input rst_n,input softreset
     ,input vldin, input [WID-1:0] din, output full

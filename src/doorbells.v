@@ -1,4 +1,4 @@
-
+`default_nettype wire
 module doorbells #(parameter THREADS=16) ( input clk, input rst_n
     ,input softreset
     ,input [9:0] global_time

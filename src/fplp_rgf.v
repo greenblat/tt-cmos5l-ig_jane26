@@ -1,5 +1,4 @@
-
-`timescale 1ns / 1ps
+`default_nettype wire
 module fplp_rgf (input pclk, input presetn, input softreset
     ,input psel, input penable, input pwrite, input [4-1:0] pstrb, input [8-1:0] paddr, input [32-1:0] pwdata, output [32-1:0] prdata,output [32-1:0] prdata_wire
     ,output pready, output pslverr

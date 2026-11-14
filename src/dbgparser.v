@@ -1,4 +1,4 @@
-
+`default_nettype wire
 
 module dbgparser #(parameter BAUDRATE=244,parameter DWID=32)(
     input clk, input rst_n

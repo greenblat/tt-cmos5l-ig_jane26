@@ -1,4 +1,4 @@
-
+`default_nettype wire
 module ram_32bit_4096addr (
      input CK, input [31:0] D, output reg [31:0] Q, input [13:0] A
     ,input WEN, input CEN

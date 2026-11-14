@@ -1,5 +1,4 @@
-
-// posedge_detect pos_fifo1 (.clk(clk),.rst_n(rst_n),.din(fifo1out_pulse),.dout(fifo1out_pulse_pos));
+`default_nettype wire
 
 module posedge_detect(
     input clk, input rst_n

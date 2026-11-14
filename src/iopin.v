@@ -1,4 +1,4 @@
-
+`default_nettype wire
 module iopin (input clk, input rst_n
     ,input pin_in, output reg pin_out, output reg tri_out
     ,output pin_sampled

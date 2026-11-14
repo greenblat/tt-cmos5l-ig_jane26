@@ -1,3 +1,4 @@
+`default_nettype wire
 module fplpx_decoder(input [7:0] opcode,input valid,output not_opcode
 ,output nop_code
 ,output [7:0] nop_opcode

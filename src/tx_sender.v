@@ -1,4 +1,4 @@
-
+`default_nettype wire
 
 
 module tx_sender #(parameter WID = 32) ( input clk, input rst_n

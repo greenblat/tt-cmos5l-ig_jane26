@@ -1,5 +1,5 @@
-`timescale 1ns / 1ps
 
+`default_nettype wire
 module synchronizer_rst_n (
     input clk, input rst_n,output rst_n_synced
 );

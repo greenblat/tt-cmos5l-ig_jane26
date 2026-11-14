@@ -1,3 +1,5 @@
+`default_nettype wire
+
 module cpu_cluster (input clk, input rst_n
     ,input softreset
 

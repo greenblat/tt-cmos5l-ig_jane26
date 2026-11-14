@@ -1,6 +1,5 @@
 
-`timescale 1ns / 1ps
-
+`default_nettype wire
 module synchronizer_level (
     input clk, input din, input rst_n,output dout
 );

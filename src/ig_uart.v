@@ -1,4 +1,4 @@
-
+`default_nettype wire
 
 module ig_uart(
     input rxd,

@@ -1,3 +1,4 @@
+`default_nettype wire
 module io_cluster (input clk, input rst_n
     ,output [11:0] pin_out
     ,output [11:0] tri_out

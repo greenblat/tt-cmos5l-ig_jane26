@@ -1,4 +1,4 @@
-
+`default_nettype wire
 module variables (input clk, input rst_n
     ,input [8:0] addr
     ,input [15:0] wdata

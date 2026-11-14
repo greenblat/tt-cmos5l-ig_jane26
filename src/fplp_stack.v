@@ -1,4 +1,4 @@
-
+`default_nettype wire
 module fplp_stack ( input clk, input rst_n
     ,output [15:0] opstack0
     ,output [15:0] opstack1

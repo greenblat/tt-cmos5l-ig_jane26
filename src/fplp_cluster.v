@@ -1,4 +1,4 @@
-
+`default_nettype wire
 module fplp_cluster  #(parameter BAUDRATE=416) (input clk, input rst_n
     ,output [11:0] pin_out
     ,output [11:0] tri_out

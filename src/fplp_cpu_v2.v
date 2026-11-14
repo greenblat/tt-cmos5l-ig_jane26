@@ -1,3 +1,4 @@
+`default_nettype wire
 // fplp_cpu - pipelined version
 //
 // Pipeline: overlapped FETCH / EXECUTE.

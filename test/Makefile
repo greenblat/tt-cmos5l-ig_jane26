@@ -6,7 +6,7 @@ SIM ?= icarus
 FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v  io_cluster.v  iopin.v  synchronizer_level.v  syncfifo.v  syncfifo_v2.v  fplp_cluster.v  ig_debuguart.v  dbgparser.v  tx_sender.v  ig_uart.v  synchronizer_rst_n.v  ram_32bit_4096addr.v  rgf/fplp_rgf.v  cpu_cluster.v  doorbells.v  fplp_cpu_v2.v  fplp_stack.v  fplpx_decoder.v  variables.v  posedge_detect.v
+PROJECT_SOURCES = project.v  io_cluster.v  iopin.v  synchronizer_level.v  syncfifo.v  syncfifo_v2.v  fplp_cluster.v  ig_debuguart.v  dbgparser.v  tx_sender.v  ig_uart.v  synchronizer_rst_n.v  ram_32bit_4096addr.v  fplp_rgf.v  cpu_cluster.v  doorbells.v  fplp_cpu_v2.v  fplp_stack.v  fplpx_decoder.v  variables.v  posedge_detect.v
 
 ifneq ($(GATES),yes)
 

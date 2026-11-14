@@ -31,7 +31,7 @@ project:
     - "ig_uart.v"
     - "synchronizer_rst_n.v"
     - "ram_32bit_4096addr.v"
-    - "rgf/fplp_rgf.v"
+    - "fplp_rgf.v"
     - "cpu_cluster.v"
     - "doorbells.v"
     - "fplp_cpu_v2.v"

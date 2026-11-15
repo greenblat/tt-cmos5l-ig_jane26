@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 module fplp_cluster  #(parameter BAUDRATE=416) (input clk, input rst_n
     ,output [11:0] pin_out
     ,output [11:0] tri_out
@@ -45,13 +46,8 @@ wire   [31:0] drct_rdata;
 ig_debuguart #(.BAUDRATE(BAUDRATE)) ig_debuguart (.clk(clk) ,.reset_n(rst_n)
     ,.rxd   (rxd_i  )
     ,.txd   (txd_o  )
-    ,.xevent(16'b0  )
 
     ,.interrupt (1'b0)
-    ,.la_dout   (32'b0  )
-    ,.la_read   ()
-    ,.la_restart()
-    ,.la_what   ()
 
     
     ,.s_paddr   (s_paddr[31:0]  )
@@ -63,10 +59,6 @@ ig_debuguart #(.BAUDRATE(BAUDRATE)) ig_debuguart (.clk(clk) ,.reset_n(rst_n)
     ,.s_pstrb   (s_pstrb[3:0]   )
     ,.s_pwdata  (s_pwdata[31:0] )
     ,.s_pwrite  (s_pwrite       )
-
-    ,.read_trace        ()
-    ,.trace_ptr         (20'b0   )
-    ,.tracer_rptr_write ()
 
     ,.uart2extram(uart2extram)
     ,.drct_addr(drct_addr)
@@ -121,7 +113,7 @@ wire [31:0] fplp_prdata = prdata ;
 wire xsel = fplp_psel && !fplp_paddr[15];
 
 wire        psel    = xsel || s_psel;
-wire [31:0] paddr   = xsel ? fplp_paddr   : s_paddr;
+wire [31:0] paddr   = xsel ? {16'b0,fplp_paddr}   : s_paddr;
 wire        penable = xsel ? fplp_penable : s_penable;
 wire [3:0]  pstrb   = xsel ? fplp_pstrb   : s_pstrb;
 wire [31:0] pwdata  = xsel ? fplp_pwdata  : s_pwdata;
@@ -147,7 +139,7 @@ wire fifo1out_pulse;
 
 
 
-
+wire fifo0_empty,fifo1_empty;
 wire fifo1out_pulse_pos;
 posedge_detect pos_fifo1 (.clk(clk),.rst_n(rst_n),.din(fifo1out_pulse),.dout(fifo1out_pulse_pos));
 
@@ -167,10 +159,11 @@ reg was_psel;
 always @(posedge clk) was_psel <= psel;
 wire psel_pulse = !was_psel && psel;
 wire psel_final = pwrite ? psel_pulse : psel;
+wire prog_vld;
 fplp_rgf fplp_rgf (.pclk(clk),.presetn(rst_n)
     ,.pwrite(pwrite),.paddr(paddr[7:0]),.psel(psel_final),.penable(penable)
     ,.prdata(prdata),.prdata_wire(),.pwdata(pwdata),.pstrb(pstrb)
-    ,.pready(pready),.pslverr(pslverr)
+    ,.pready(),.pslverr()
     ,.softreset(1'b0)
 
     ,.version(version)
@@ -207,6 +200,12 @@ fplp_rgf fplp_rgf (.pclk(clk),.presetn(rst_n)
 
     ,.ext_event(ext_event)
     ,.ext_event_pulse(ext_event_vld)
+
+    ,.scratchpad()
+    ,.param0()
+    ,.param1()
+    ,.param2()
+    ,.param3()
 );
 
 wire [31:0] qq;
@@ -218,6 +217,7 @@ wire  [9:0] pin_event_timing;
 wire  pin_event_vld;
 
 
+wire cmd_vld;
 cpu_cluster cpu_cluster (
      .clk(clk) ,.rst_n(rst_n)
     ,.softreset(ctrl_softreset)
@@ -265,7 +265,7 @@ wire cen = ~(cpu_rd || drct_access);
 
 // wire [31:0] wmask = drct_access ? 32'hffffffff : cpu_wmask ;
 wire [31:0] wmask = 32'hffffffff ;
-wire [13:0] aa = drct_access ? drct_addr : cpu_addr ;
+wire [13:0] aa = drct_access ? drct_addr[13:0] : cpu_addr[13:0] ;
 wire [31:0] dd = drct_wdata;
 
 assign drct_rdata = qq;
@@ -316,5 +316,8 @@ io_cluster io_cluster (
 );
 
 
+wire [63:0]  sign_version = 64'hb4d4c94ade151126 ;
 endmodule
+// FROMFILE b4d4c 94ade :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_cluster.v
+
 

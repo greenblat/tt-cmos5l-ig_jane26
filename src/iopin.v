@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 module iopin (input clk, input rst_n
     ,input pin_in, output reg pin_out, output reg tri_out
     ,output pin_sampled
@@ -183,5 +184,8 @@ wire dbg1 = armed && dbg0;
 
 
 
+wire [63:0]  sign_version = 64'hc60c655e94151126 ;
 endmodule
+// FROMFILE c60c6 55e94 :: /Users/iliagreenblat/projects/fplp/verila/src/iopin.v
+
 

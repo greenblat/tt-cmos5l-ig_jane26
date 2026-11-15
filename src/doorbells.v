@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 module doorbells #(parameter THREADS=16) ( input clk, input rst_n
     ,input softreset
     ,input [9:0] global_time
@@ -108,5 +109,8 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 
+wire [63:0]  sign_version = 64'hec4102c20b151126 ;
 endmodule
+// FROMFILE ec410 2c20b :: /Users/iliagreenblat/projects/fplp/verila/src/doorbells.v
+
 

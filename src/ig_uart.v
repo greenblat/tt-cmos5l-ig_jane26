@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 
 module ig_uart(
     input rxd,
@@ -82,7 +83,7 @@ reg one_dly3; always @(posedge clk ) one_dly3 <= one_dly2;
 wire is_zero = rxd_sr[4:2] == 3'b000;
 wire is_noise = !is_one && !is_zero;
 
-wire [15:0] bit_place = (8'b1 + {1'b0,baudrate[15:1]}) - 6;
+wire [15:0] bit_place = (1 + {1'b0,baudrate[15:1]}) - 6;
 
 reg rxd_filt;
 reg was_bit_noise;
@@ -141,7 +142,7 @@ end
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        rxinbit <= 15'b0;
+        rxinbit <= 16'b0;
         rx_active <= 1'b0;
     end else begin
         rxinbit <= 
@@ -250,7 +251,7 @@ always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         tx_bufa <= 8'b0;
         tx_bufa_valid <= 1'b0;
-        tx_bufb <= 8'b0;
+        tx_bufb <= 9'b0;
         tx_bufb_valid <= 1'b0;
     end else begin
         if (write_tx && !tx_bufa_valid) begin
@@ -310,9 +311,10 @@ always @(posedge clk or negedge rst_n ) begin
     end
 end
 
-wire [63:0]  sign_version = 64'h720c791e59150725 ;
+wire [63:0]  sign_version = 64'hc376f93501151126 ;
 endmodule
-// FROMFILE 720c7 91e59 :: /Users/iliagreenblat/clients/magic/uart/rtl/ml_uart.v
+// FROMFILE c376f 93501 :: /Users/iliagreenblat/projects/fplp/verila/src/ig_uart.v
+
 
 
 

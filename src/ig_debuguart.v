@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 
 
 module ig_debuguart #(parameter BAUDRATE=244) (
@@ -25,17 +26,6 @@ module ig_debuguart #(parameter BAUDRATE=244) (
 
     ,input interrupt
 
-
-    ,output read_trace
-    ,input [15:0] xevent
-    ,input [19:0] trace_ptr
-    ,output tracer_rptr_write
-
-    ,output la_restart
-    ,output la_read
-    ,output [3:0] la_what
-    ,input [31:0] la_dout
-
 );
 
 reg [15:0] max_rx_sync;
@@ -60,25 +50,61 @@ wire rst_n = rstcnt==15;
 
 
 
+wire softreset = 0;
 assign s_pstrb  = 4'hf;
 
-wire uart2swiss = (drct_wr || drct_rd) && (drct_addr[31:28] == 0);
-wire readFromSwiss =  drct_rd && ((drct_addr[31:28] == 14) || (drct_addr[31:28] < 5));
+wire swiss_read = drct_rd && (drct_addr[31:28] == 0);
+wire read_fifo;
+wire panic_read_fifo;
+wire read_fifo_empty,read_fifo_full;
+wire [15:0] read_fifo_count;
+wire [7:0] read_fifo_out;
+wire read_fifo_readout;
+syncfifo #(.WID(8),.DEPTH(4)) read_wide_fifo (
+    .clk(clk),.rst_n(rst_n)
+   ,.vldin(swiss_read),.din(drct_addr[7:0])
+   ,.readout(read_fifo_readout),.dout(read_fifo_out)
+   ,.empty(read_fifo_empty),.full(read_fifo_full)
+   ,.count(read_fifo_count)
+   ,.softreset(softreset)
+   ,.overflow(panic_read_fifo)
+);
+
+wire panic_tx_fifo;
+wire [15:0] prdata_fifo_count;
+wire [15:0] tx_sync_fifo_count;
+wire ok_to_drct_rd = !read_fifo_empty &&  (prdata_fifo_count < 4) && (tx_sync_fifo_count<=6);
+reg [1:0] waitState;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        waitState <= 0;
+    end else begin
+        if (waitState==0) begin
+            if (ok_to_drct_rd)  begin
+                waitState <= 1;
+            end
+        end else if (waitState == 1) begin
+            if (!ok_to_drct_rd) begin
+                waitState <= 2;
+            end
+        end else if (waitState == 2) begin
+            if (ok_to_drct_rd) begin
+                waitState <= 0;
+            end
+        end
+    end
+end
+assign read_fifo_readout = ok_to_drct_rd && (waitState == 0);
+
+
+wire uart2swiss = read_fifo_readout || (drct_wr && (drct_addr[31:28] == 0));
 
 assign uart2extram = (drct_wr || drct_rd) && (drct_addr[31:28] == 5);
 
 wire uart2interrupt = (drct_wr || drct_rd) && (drct_addr[31:28] == 6);
-wire uart2tracer    = (drct_wr || drct_rd) && (drct_addr[31:28] == 7);
-wire uart2logicana    = (drct_wr || drct_rd) && (drct_addr[31:28] == 8);
 
 
-wire tracer_fifo_write = drct_rd  && uart2tracer ;
-assign tracer_rptr_write = drct_wr && uart2tracer;
-assign read_trace = tracer_fifo_write && (drct_addr[3:0] == 0);
 
-assign la_read = uart2logicana && drct_rd;
-assign la_what = la_read ? drct_addr[3:0] : 0 ;
-assign la_restart = uart2logicana && drct_wr;
 
 
 
@@ -108,25 +134,14 @@ always @(posedge clk) begin
     end
 end
 
-reg first; 
-reg [31:0] address1; 
-reg [31:0] wdata1; 
-reg [31:0] write1; 
-
-reg[7:0] waiting_period; initial waiting_period = 16;
-reg [7:0] waiting;
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        waiting <= 0;
         s_paddr <= 0;
         s_pwdata <= 0;
         s_pwrite <= 0;
         s_psel <= 0;
-    end else if (waiting>0) begin
-        waiting <= waiting - 1;
     end else begin
         if (uart2swiss) begin
-//            waiting <= waiting_period;
             s_paddr <= drct_addr;
             s_pwdata <= drct_wdata;
             s_pwrite <= drct_wr;
@@ -139,11 +154,10 @@ always @(posedge clk or negedge rst_n) begin
         end
     end
 end
-wire s_pready_int = (waiting==0) && !uart2swiss;
+wire s_pready_int = !uart2swiss;
 assign s_penable = s_psel;
 
     
-wire softreset = 0;
 
 
 
@@ -168,9 +182,7 @@ wire [7:0] rxdata_sys,txdata_sys;
 
 
 wire [15:0] rx_sync_fifo_count;
-wire [15:0] tx_sync_fifo_count;
 wire [15:0] echo_fifo_count;
-wire [15:0] prdata_fifo_count;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -189,7 +201,7 @@ end
 wire rx_sync_full;
 wire panic_rx_fifo;
 wire rx_sync_empty;
-syncfifo_v2 #(.WID(8),.DEPTH(32)) rx_sync_fifo (
+syncfifo #(.WID(8),.DEPTH(4)) rx_sync_fifo (
     .clk(clk),.rst_n(rst_n)
    ,.vldin(rx_valid),.din(rxdata)
    ,.readout(!rx_sync_empty),.dout(rxdata_sys)
@@ -199,10 +211,9 @@ syncfifo_v2 #(.WID(8),.DEPTH(32)) rx_sync_fifo (
    ,.overflow(panic_rx_fifo)
 );
 
-wire panic_tx_fifo;
-wire tx_sync_empty;
+wire tx_sync_empty,tx_sync_full;
 assign write_tx = tx_empty && !tx_sync_empty;
-syncfifo_v2 #(.WID(8),.DEPTH(32)) tx_sync_fifo (
+syncfifo_v2 #(.WID(8),.DEPTH(16)) tx_sync_fifo (
     .clk(clk),.rst_n(rst_n)
    ,.vldin(write_tx_sys),.din(txdata_sys)
    ,.readout(write_tx),.dout(txdata)
@@ -274,7 +285,7 @@ wire [7:0] charA = RTU26[evenann];
 wire rx_valid_ann = echo_on && ((!rx_sync_empty) || send_announce);
 wire [7:0] rxdata_ann = (!rx_sync_empty) ? rxdata_sys : charA;
 
-syncfifo_v2 #(.WID(8),.DEPTH(32)) echo_fifo (
+syncfifo_v2 #(.WID(8),.DEPTH(8)) echo_fifo (
     .clk(clk),.rst_n(rst_n)
    ,.vldin(rx_valid_ann),.din(rxdata_ann)
    ,.readout(readout_echo),.dout(echobyte)
@@ -290,15 +301,13 @@ wire prdata_fifo_write = s_pready_int && s_penable && !s_pwrite;
 wire [31:0] rpacket;
 
 wire [31:0] prdata_fifo_din = 
-    (uart2logicana) ?  la_dout :
-    (tracer_fifo_write && (drct_addr[3:0] == 0)) ? {16'h5000,xevent} : 
-    tracer_fifo_write ? {8'h30,2'b0,trace_ptr[19:10],2'b0,trace_ptr[9:0] } : 
     uart2extram_d2 ? qqdata : 
     s_prdata;
 
-wire prdata_fifo_vldin  = prdata_fifo_write || uart2extram_d2 || tracer_fifo_write ||  la_read;
+wire prdata_fifo_vldin  = prdata_fifo_write || uart2extram_d2; 
 
-syncfifo_v2 #(.WID(32),.DEPTH(32)) prdata_fifo (
+wire rdata_fifo_full;
+syncfifo_v2 #(.WID(32),.DEPTH(4)) prdata_fifo (
     .clk(clk),.rst_n(rst_n)
    ,.vldin(prdata_fifo_vldin),.din(prdata_fifo_din)
    ,.readout(readout_rdata),.dout(rpacket)
@@ -347,6 +356,8 @@ dbgparser #(.BAUDRATE(BAUDRATE),.DWID(32)) dbgparser (
     ,.status(status)
 );
 
-wire [63:0]  sign_version = 64'h000b144d13210923 ;
+wire [63:0]  sign_version = 64'h5f8bc9f64e151126 ;
 endmodule
+// FROMFILE 5f8bc 9f64e :: /Users/iliagreenblat/projects/fplp/verila/src/ig_debuguart.v
+
 

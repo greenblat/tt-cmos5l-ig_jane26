@@ -1,4 +1,6 @@
+`timescale 1ns / 1ps
 `default_nettype wire
+
 module io_cluster (input clk, input rst_n
     ,output [11:0] pin_out
     ,output [11:0] tri_out
@@ -35,8 +37,19 @@ wire [11:0] clear_event;
 
 wire [3:0] dbg_pin_dst = cmd_pin;
 wire [12:0] command;
+wire part_of_bus0 = (bunched_ios>0);
+wire part_of_bus1 = (bunched_ios>0) && (bunched_ios<1);
+wire part_of_bus2 = (bunched_ios>0) && (bunched_ios<2);
+wire part_of_bus3 = (bunched_ios>0) && (bunched_ios<3);
+wire part_of_bus4 = (bunched_ios>0) && (bunched_ios<4);
+wire part_of_bus5 = (bunched_ios>0) && (bunched_ios<5);
+wire part_of_bus6 = (bunched_ios>0) && (bunched_ios<6);
+wire part_of_bus7 = (bunched_ios>0) && (bunched_ios<7);
+wire part_of_bus8 = (bunched_ios>0) && (bunched_ios<8);
+wire part_of_bus9 = (bunched_ios>0) && (bunched_ios<9);
+wire part_of_bus10 = (bunched_ios>0) && (bunched_ios<10);
+wire part_of_bus11 = (bunched_ios>0) && (bunched_ios<11);
 
-wire part_of_bus0 = (bunched_ios>0) && (bunched_ios<0);
 wire cmd_vld0 =  cmd_vld && ( (cmd_pin == 0) || part_of_bus0);
 wire modified_cmd_value0 = part_of_bus0 ? bus_value[0] : cmd_value;
 
@@ -63,7 +76,6 @@ iopin iopin0 (
     ,.event_data(event_data[0])
     ,.clear_event(clear_event[0])
 );
-wire part_of_bus1 = (bunched_ios>0) && (bunched_ios<1);
 wire cmd_vld1 =  cmd_vld && ( (cmd_pin == 1) || part_of_bus1);
 wire modified_cmd_value1 = part_of_bus1 ? bus_value[1] : cmd_value;
 
@@ -90,7 +102,6 @@ iopin iopin1 (
     ,.event_data(event_data[1])
     ,.clear_event(clear_event[1])
 );
-wire part_of_bus2 = (bunched_ios>0) && (bunched_ios<2);
 wire cmd_vld2 =  cmd_vld && ( (cmd_pin == 2) || part_of_bus2);
 wire modified_cmd_value2 = part_of_bus2 ? bus_value[2] : cmd_value;
 
@@ -117,7 +128,6 @@ iopin iopin2 (
     ,.event_data(event_data[2])
     ,.clear_event(clear_event[2])
 );
-wire part_of_bus3 = (bunched_ios>0) && (bunched_ios<3);
 wire cmd_vld3 =  cmd_vld && ( (cmd_pin == 3) || part_of_bus3);
 wire modified_cmd_value3 = part_of_bus3 ? bus_value[3] : cmd_value;
 
@@ -144,7 +154,6 @@ iopin iopin3 (
     ,.event_data(event_data[3])
     ,.clear_event(clear_event[3])
 );
-wire part_of_bus4 = (bunched_ios>0) && (bunched_ios<4);
 wire cmd_vld4 =  cmd_vld && ( (cmd_pin == 4) || part_of_bus4);
 wire modified_cmd_value4 = part_of_bus4 ? bus_value[4] : cmd_value;
 
@@ -171,7 +180,6 @@ iopin iopin4 (
     ,.event_data(event_data[4])
     ,.clear_event(clear_event[4])
 );
-wire part_of_bus5 = (bunched_ios>0) && (bunched_ios<5);
 wire cmd_vld5 =  cmd_vld && ( (cmd_pin == 5) || part_of_bus5);
 wire modified_cmd_value5 = part_of_bus5 ? bus_value[5] : cmd_value;
 
@@ -198,7 +206,6 @@ iopin iopin5 (
     ,.event_data(event_data[5])
     ,.clear_event(clear_event[5])
 );
-wire part_of_bus6 = (bunched_ios>0) && (bunched_ios<6);
 wire cmd_vld6 =  cmd_vld && ( (cmd_pin == 6) || part_of_bus6);
 wire modified_cmd_value6 = part_of_bus6 ? bus_value[6] : cmd_value;
 
@@ -225,7 +232,6 @@ iopin iopin6 (
     ,.event_data(event_data[6])
     ,.clear_event(clear_event[6])
 );
-wire part_of_bus7 = (bunched_ios>0) && (bunched_ios<7);
 wire cmd_vld7 =  cmd_vld && ( (cmd_pin == 7) || part_of_bus7);
 wire modified_cmd_value7 = part_of_bus7 ? bus_value[7] : cmd_value;
 
@@ -252,7 +258,6 @@ iopin iopin7 (
     ,.event_data(event_data[7])
     ,.clear_event(clear_event[7])
 );
-wire part_of_bus8 = (bunched_ios>0) && (bunched_ios<8);
 wire cmd_vld8 =  cmd_vld && ( (cmd_pin == 8) || part_of_bus8);
 wire modified_cmd_value8 = part_of_bus8 ? bus_value[8] : cmd_value;
 
@@ -279,7 +284,6 @@ iopin iopin8 (
     ,.event_data(event_data[8])
     ,.clear_event(clear_event[8])
 );
-wire part_of_bus9 = (bunched_ios>0) && (bunched_ios<9);
 wire cmd_vld9 =  cmd_vld && ( (cmd_pin == 9) || part_of_bus9);
 wire modified_cmd_value9 = part_of_bus9 ? bus_value[9] : cmd_value;
 
@@ -306,7 +310,6 @@ iopin iopin9 (
     ,.event_data(event_data[9])
     ,.clear_event(clear_event[9])
 );
-wire part_of_bus10 = (bunched_ios>0) && (bunched_ios<10);
 wire cmd_vld10 =  cmd_vld && ( (cmd_pin == 10) || part_of_bus10);
 wire modified_cmd_value10 = part_of_bus10 ? bus_value[10] : cmd_value;
 
@@ -333,7 +336,6 @@ iopin iopin10 (
     ,.event_data(event_data[10])
     ,.clear_event(clear_event[10])
 );
-wire part_of_bus11 = (bunched_ios>0) && (bunched_ios<11);
 wire cmd_vld11 =  cmd_vld && ( (cmd_pin == 11) || part_of_bus11);
 wire modified_cmd_value11 = part_of_bus11 ? bus_value[11] : cmd_value;
 
@@ -392,6 +394,9 @@ assign pin_event = selected;
 wire [11:0] event_data_selected = event_data[selected];
 assign pin_event_timing = event_data_selected[11:2];
 assign pin_event_vld = vldin && enable_in_threads[selected];
+wire [63:0]  sign_version = 64'hcca58ec79f151126 ;
 endmodule
+// FROMFILE cca58 ec79f :: /Users/iliagreenblat/projects/fplp/verila/src/io_cluster.v
+
 
 

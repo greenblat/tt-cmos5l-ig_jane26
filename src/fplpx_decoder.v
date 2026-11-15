@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 module fplpx_decoder(input [7:0] opcode,input valid,output not_opcode
 ,output nop_code
 ,output [7:0] nop_opcode
@@ -175,5 +176,8 @@ assign third_flag = valid && (loadi16_code);
 assign dual_flag = valid && (add_code ||sub_code ||and_code ||or_code ||land_code ||lor_code ||xor_code);
 assign triple_flag = valid && (select_code);
 assign single_flag = valid && (neg_code ||not_code ||shiftl_code ||mask_code ||pop_code);
+wire [63:0]  sign_version = 64'haa6b49a446151126 ;
 endmodule
+// FROMFILE aa6b4 9a446 :: /Users/iliagreenblat/projects/fplp/verila/src/fplpx_decoder.v
+
 

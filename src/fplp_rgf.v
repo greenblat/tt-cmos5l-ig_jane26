@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 module fplp_rgf (input pclk, input presetn, input softreset
     ,input psel, input penable, input pwrite, input [4-1:0] pstrb, input [8-1:0] paddr, input [32-1:0] pwdata, output [32-1:0] prdata,output [32-1:0] prdata_wire
     ,output pready, output pslverr
@@ -92,7 +93,10 @@ fplp_rgf_ram rgf (.pclk(pclk),.presetn(presetn),.softreset(softreset),.pwrite(i_
 assign ctrl_operate = control[0];
 assign ctrl_softreset = control[1];
 assign ctrl_event_to_rgf = control[2];
+wire [63:0]  sign_version = 64'h7849d38289151126 ;
 endmodule
+// FROMFILE 7849d 38289 :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_rgf.v
+
 `timescale 1ns / 1ps
 module fplp_rgf_ram (
     input pclk,input presetn, input softreset, input pwrite, input pread, input penable
@@ -279,4 +283,7 @@ wire ext_event_wr_sel = pwrite && (mpaddr=='h68);
 reg ext_event_wr_pulse_reg; always @(posedge pclk or negedge presetn)  if (!presetn) ext_event_wr_pulse_reg<=0; else ext_event_wr_pulse_reg <= ext_event_wr_sel;
 assign ext_event_pulse = ext_event_wr_pulse_reg;
 
+wire [63:0]  sign_version = 64'hdff6887a53151126 ;
 endmodule
+// FROMFILE dff68 87a53 :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_rgf.v
+

@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 module fplp_stack ( input clk, input rst_n
     ,output [15:0] opstack0
     ,output [15:0] opstack1
@@ -112,6 +113,9 @@ wire [15:0] dbg1 = opstack[1];
 wire [15:0] dbg2 = opstack[2];
 wire [15:0] dbg3 = opstack[3];
 
+wire [63:0]  sign_version = 64'h0728437070151126 ;
 endmodule
+// FROMFILE 07284 37070 :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_stack.v
+
 
 

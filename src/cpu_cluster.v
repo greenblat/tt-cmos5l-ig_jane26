@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 
 module cpu_cluster (input clk, input rst_n
     ,input softreset
@@ -176,5 +177,8 @@ fplp_cpu  cpu_top (
 
 
 
+wire [63:0]  sign_version = 64'hc82df480bc151126 ;
 endmodule
+// FROMFILE c82df 480bc :: /Users/iliagreenblat/projects/fplp/verila/src/cpu_cluster.v
+
 

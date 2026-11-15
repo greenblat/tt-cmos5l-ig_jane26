@@ -1,5 +1,7 @@
 
 `default_nettype wire
+`timescale 1ns / 1ps
+
 module synchronizer_level (
     input clk, input din, input rst_n,output dout
 );
@@ -18,9 +20,10 @@ end
 assign dout = SFLOP1;
 
 
-wire [63:0]  sign_version = 64'h05da405bbd250226 ;
+wire [63:0]  sign_version = 64'h265050631e151126 ;
 endmodule
-// FROMFILE 05da4 05bbd :: /Users/iliagreenblat/project4/rtl/p4_synchronizer_level.v
+// FROMFILE 26505 0631e :: /Users/iliagreenblat/projects/fplp/verila/src/synchronizer_level.v
+
 
 
 

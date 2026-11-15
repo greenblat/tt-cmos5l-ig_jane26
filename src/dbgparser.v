@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 
 module dbgparser #(parameter BAUDRATE=244,parameter DWID=32)(
     input clk, input rst_n
@@ -51,8 +52,10 @@ wire [7:0] let_f = 8'h66;
 
 wire hexvalid =    ((rxdata >= let_0) && (rxdata <= let_9)) 
                 || ((rxdata >= let_a) && (rxdata <= let_f));
-wire [3:0] hexnibble = 
-    ((rxdata >= let_0) && (rxdata <= let_9)) ? (rxdata - let_0) : (10+rxdata - let_a) ;
+wire [7:0] tmpnibble0 = rxdata - let_0;
+wire [7:0] tmpnibble1 = 10+rxdata-let_a;
+
+wire [3:0] hexnibble = ((rxdata >= let_0) && (rxdata <= let_9)) ? tmpnibble0[3:0] : tmpnibble1[3:0];
 
 
 // commands:  all commands can  be closed with "." - dot.
@@ -102,7 +105,7 @@ always @(posedge clk or negedge rst_n) begin
                 tmp <= 0;
             end else if (state == ST_J0) begin
                 if (hexvalid) begin
-                    tmp <= {tmp[11:0],hexnibble};
+                    tmp <= {tmp[27:0],hexnibble};
                 end else
                     state <= ST_IDLE;
             end else if (rxdata == let_W) begin
@@ -130,17 +133,17 @@ always @(posedge clk or negedge rst_n) begin
                     state <= ST_IDLE;
             end else if (state==ST_BAUDRATE) begin
                 if (hexvalid) begin
-                    tmp <= {tmp[11:0],hexnibble};
+                    tmp <= {tmp[27:0],hexnibble};
                 end else
                     state <= ST_IDLE;
             end else if (state==ST_ECHO) begin
                 if (hexvalid) begin
-                    tmp <= {tmp[11:0],hexnibble};
+                    tmp <= {tmp[27:0],hexnibble};
                 end else
                     state <= ST_IDLE;
             end else if (state==ST_INTERRUPT) begin
                 if (hexvalid) begin
-                    tmp <= {tmp[11:0],hexnibble};
+                    tmp <= {tmp[27:0],hexnibble};
                 end else
                     state <= ST_IDLE;
             end else if (state==ST_GPIO) begin
@@ -152,7 +155,7 @@ always @(posedge clk or negedge rst_n) begin
             end else if (state==ST_WDATA) begin
                 incr_next_addr <= 0;
                 if (hexvalid) begin
-                    drct_wdata <= {drct_wdata[DWID-1:0],hexnibble};
+                    drct_wdata <= {drct_wdata[DWID-5:0],hexnibble};
                 end else
                     state <= ST_IDLE;
             end else if (state==ST_READ) begin
@@ -160,7 +163,7 @@ always @(posedge clk or negedge rst_n) begin
                 incr_next_addr <= 1;
             end else if (state==ST_WRITE) begin
                 if (hexvalid) begin
-                    drct_wdata <= {drct_wdata[DWID-1:0],hexnibble};
+                    drct_wdata <= {drct_wdata[DWID-5:0],hexnibble};
                 end else begin
                     state <= ST_IDLE;
                     incr_next_addr <= 1;
@@ -178,6 +181,7 @@ assign wr_baud  = (was_state == ST_BAUDRATE) && (state != ST_BAUDRATE);
 wire wr_echo = (was_state == ST_ECHO) && (state != ST_ECHO);
 wire use_j   = (was_state == ST_J0) && (state != ST_J0);
 
+// for simulation markings. add to rgf?
 reg [15:0] jjvalue;
 reg [15:0] jjseq;
 always @(posedge clk) begin
@@ -207,9 +211,10 @@ end
 
 
 
-wire [63:0]  sign_version = 64'hcf1604ef3d141125 ;
+wire [63:0]  sign_version = 64'h4b0955ae63151126 ;
 endmodule
-// FROMFILE cf160 4ef3d :: /Users/iliagreenblat/clients/ddfc/rtl/dbgparser.v
+// FROMFILE 4b095 5ae63 :: /Users/iliagreenblat/projects/fplp/verila/src/dbgparser.v
+
 
 
 

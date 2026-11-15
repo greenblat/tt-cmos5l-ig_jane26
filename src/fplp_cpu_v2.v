@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 // fplp_cpu - pipelined version
 //
 // Pipeline: overlapped FETCH / EXECUTE.
@@ -208,6 +209,7 @@ fplpx_decoder fplpx_decoder (.valid(go),.opcode(popcoda)
 // ---------------------------------------------------------------------------
 // operand byte / variables
 // ---------------------------------------------------------------------------
+wire [9:0] cpu_rdata10 = {2'b0,cpu_rdata};
 wire [8:0]  full_addr_field = {addr_field,cpu_rdata};
 wire        varwrite = store_code || stori_code;
 wire [15:0] wdata    = stori_code ? {12'd0,lit_field} : opstack0;
@@ -450,35 +452,35 @@ always @(posedge clk or negedge rst_n) begin
                     cmd_vld <= 1; cmd_tri_now <= 1;
                 end
                 if (io_catch_time_stack_code) begin
-                    cmd_vld <= 1; cmd_time <= opstack0 + timing; cmd_catch_time <= 1;
+                    cmd_vld <= 1; cmd_time <= opstack0[9:0] + timing; cmd_catch_time <= 1;
                 end
                 if (io_force_future_stack_code) begin
-                    cmd_vld <= 1; cmd_time <= opstack0 + timing;
+                    cmd_vld <= 1; cmd_time <= opstack0[9:0] + timing;
                     cmd_force_future <= 1; cmd_value <= val_field;
                 end
                 if (io_tri_future_stack_code) begin
-                    cmd_vld <= 1; cmd_time <= opstack0 + timing; cmd_tri_future <= 1;
+                    cmd_vld <= 1; cmd_time <= opstack0[9:0] + timing; cmd_tri_future <= 1;
                 end
                 if (io_catch_time_code) begin
-                    cmd_vld <= 1; cmd_time <= cpu_rdata + timing; cmd_catch_time <= 1;
+                    cmd_vld <= 1; cmd_time <= cpu_rdata10 + timing; cmd_catch_time <= 1;
                 end
                 if (io_force_future_code) begin
-                    cmd_vld <= 1; cmd_time <= cpu_rdata + timing;
+                    cmd_vld <= 1; cmd_time <= cpu_rdata10 + timing;
                     cmd_value <= val_field; cmd_force_future <= 1;
                 end
                 if (io_tri_future_code) begin
-                    cmd_vld <= 1; cmd_time <= cpu_rdata + timing; cmd_tri_future <= 1;
+                    cmd_vld <= 1; cmd_time <= cpu_rdata10 + timing; cmd_tri_future <= 1;
                 end
                 if (cpu_future_event_code) begin
                     cpu_event_vld <= 1;
                     cpu_event_timing <= timing + opstack0[8:0];
-                    cpu_event_pc <= cpu_rdata;
+                    cpu_event_pc <= {4'b0,cpu_rdata[7:0]};
                     cpu_event_mode <= 2;
                     cpu_thread <= thread_field;
                 end
                 if (cpu_now_event_code) begin
                     cpu_event_vld <= 1;
-                    cpu_event_pc <= cpu_rdata;
+                    cpu_event_pc <= {4'b0,cpu_rdata[7:0]};
                     cpu_event_mode <= 1;
                     cpu_thread <= thread_field;
                 end
@@ -531,14 +533,14 @@ always @(posedge clk or negedge rst_n) begin
     end else begin
         if (apbst==0) begin
             if (apbrd_code) begin
-                paddr <= full_addr_field;
+                paddr <= {7'b0,full_addr_field};
                 pwrite <= 0;
                 psel <= 1;
                 pwdata <= 0;
                 pstrb <= 0;
                 apbst <= 3;
             end else if (apbwr_code) begin
-                paddr <= full_addr_field;
+                paddr <= {7'b0,full_addr_field};
                 pwrite <= 1;
                 psel <= 1;
                 pwdata <= opstack0;
@@ -565,4 +567,7 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+wire [63:0]  sign_version = 64'he74ac371a8151126 ;
 endmodule
+// FROMFILE e74ac 371a8 :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_cpu_v2.v
+

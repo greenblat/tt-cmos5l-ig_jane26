@@ -4,6 +4,7 @@
  */
 
 `default_nettype none
+`timescale 1ns / 1ps
 
 module tt_um_greenblat_protocoler (
     input  wire [7:0] ui_in,    // Dedicated inputs
@@ -30,7 +31,7 @@ assign pin_in[11:8] = ui_in[7:4];
 
 assign uio_out = pin_out[7:0];
 assign pin_in[7:0] = uio_in[7:0];
-assign uio_oe =  tri_out;
+assign uio_oe =  tri_out[7:0];
 
 fplp_cluster #(.BAUDRATE(50)) fplp_cluster (
      .clk(clk)
@@ -50,4 +51,7 @@ fplp_cluster #(.BAUDRATE(50)) fplp_cluster (
 
 
 
+wire [63:0]  sign_version = 64'h35fa015daa151126 ;
 endmodule
+// FROMFILE 35fa0 15daa :: /Users/iliagreenblat/projects/fplp/verila/src/project.v
+

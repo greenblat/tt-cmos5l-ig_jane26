@@ -1,4 +1,5 @@
 `default_nettype wire
+`timescale 1ns / 1ps
 module syncfifo_v2 #(parameter WID = 32, parameter DEPTH=8, parameter AWID = $clog2(DEPTH))(
      input clk,input rst_n,input softreset
     ,input vldin, input [WID-1:0] din, output full
@@ -54,8 +55,10 @@ assign empty = int_empty && !vldout;
 assign full = int_full;
 assign overflow = (vldin && full) || panic0;
 
-wire [63:0]  sign_version = 64'h6ec421ea4c250226 ;
+wire [63:0]  sign_version = 64'he0d9320b8e151126 ;
 endmodule
+// FROMFILE e0d93 20b8e :: /Users/iliagreenblat/projects/fplp/verila/src/syncfifo_v2.v
+
 
 
 

@@ -1,5 +1,7 @@
 
 `default_nettype wire
+`timescale 1ns / 1ps
+
 module synchronizer_rst_n (
     input clk, input rst_n,output rst_n_synced
 );
@@ -17,8 +19,9 @@ end
 assign rst_n_synced = SYNCFLOP1;
 
 
-wire [63:0]  sign_version = 64'ha6488062a1021224 ;
+wire [63:0]  sign_version = 64'h36cec06b05151126 ;
 endmodule
-// FROMFILE a6488 062a1 021224 :: /Users/iliagreenblat/project2/fpga/fpga_rtl/synchronizer_rst_n.v
+// FROMFILE 36cec 06b05 :: /Users/iliagreenblat/projects/fplp/verila/src/synchronizer_rst_n.v
+
 
 

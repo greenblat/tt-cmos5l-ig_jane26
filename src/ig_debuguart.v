@@ -23,6 +23,7 @@ module ig_debuguart #(parameter BAUDRATE=244) (
     ,output [31:0] drct_wdata
     ,output  drct_wr
     ,input   [31:0] drct_rdata
+    ,input drct_ready
 
     ,input interrupt
 
@@ -117,16 +118,22 @@ reg [31:0] qqdata;
 reg sticky_interrupt;
 reg uart2extram_d1;
 reg uart2extram_d2;
+reg uart2extram_d3;
+reg uart2extram_d4;
 always @(posedge clk) begin
     if (!rst_n) begin
         sticky_interrupt <= 0;
         qqdata <= 0;
         uart2extram_d1 <= 0;
         uart2extram_d2 <= 0;
+        uart2extram_d3 <= 0;
+        uart2extram_d4 <= 0;
     end else begin
         uart2extram_d1 <= uart2extram && drct_rd;
         uart2extram_d2 <= uart2extram_d1;
-        if (uart2extram_d1) qqdata <= drct_rdata;
+        uart2extram_d3 <= uart2extram_d2;
+        uart2extram_d4 <= uart2extram_d3;
+        if (uart2extram_d3) qqdata <= drct_rdata;
         if (interrupt) 
             sticky_interrupt <= 1;
         else if (uart2interrupt)
@@ -301,10 +308,10 @@ wire prdata_fifo_write = s_pready_int && s_penable && !s_pwrite;
 wire [31:0] rpacket;
 
 wire [31:0] prdata_fifo_din = 
-    uart2extram_d2 ? qqdata : 
+    uart2extram_d4 ? qqdata : 
     s_prdata;
 
-wire prdata_fifo_vldin  = prdata_fifo_write || uart2extram_d2; 
+wire prdata_fifo_vldin  = prdata_fifo_write || uart2extram_d4; 
 
 wire rdata_fifo_full;
 syncfifo_v2 #(.WID(32),.DEPTH(4)) prdata_fifo (

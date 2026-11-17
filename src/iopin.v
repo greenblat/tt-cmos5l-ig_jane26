@@ -121,11 +121,9 @@ always @(posedge clk or negedge rst_n) begin
     end else begin
         if (cmd_vld && cmd_force_now) begin
             pin_out <= cmd_value;
-        end if (cmd_vld && cmd_tri_now && !armed) begin
-            future_value <= 0;
-            future_tri <= 1;
-            future_time <=  cmd_time;
-            armed <= 1;
+            tri_out <= 0;
+        end if (cmd_vld && cmd_tri_now) begin
+            tri_out <= 0;
         end else if (cmd_vld && cmd_force_future && !armed) begin
             future_value <= cmd_value;
             future_tri <= 0;

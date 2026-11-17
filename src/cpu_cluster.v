@@ -2,6 +2,8 @@
 `timescale 1ns / 1ps
 
 module cpu_cluster (input clk, input rst_n
+    ,input stall
+    ,input cpu_ready
     ,input softreset
 
     ,output  [15:0] paddr
@@ -31,7 +33,7 @@ module cpu_cluster (input clk, input rst_n
 
     ,output cpu_rd
     ,output [15:0] cpu_addr
-    ,input  [31:0] cpu_rdata
+    ,input  [7:0] cpu_rdata
 
     ,input  prog_vld
     ,input [3:0] prog_thread
@@ -119,18 +121,22 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-wire [15:0] cpu_addr_a;
-assign cpu_addr = cpu_addr_a>>3;
-reg [1:0] was_cpu_addr; always @(posedge clk) was_cpu_addr <= cpu_addr_a[2:1];
-wire [7:0] cpu_rdata8 = 
-    (was_cpu_addr == 0) ? cpu_rdata[7:0] :
-    (was_cpu_addr == 1) ? cpu_rdata[15:8] :
-    (was_cpu_addr == 2) ? cpu_rdata[23:16] :
-    (was_cpu_addr == 3) ? cpu_rdata[31:24] :
-    8'hx;
+// wire [15:0] cpu_addr_a;
+// assign cpu_addr = cpu_addr_a>>3;
+// reg [1:0] was_cpu_addr;
+// always @(posedge clk or negedge rst_n) begin
+//     if (!rst_n) was_cpu_addr <= 0;
+//     else if (cpu_rd) was_cpu_addr <= cpu_addr_a[2:1];
+// end
+// wire [7:0] cpu_rdata8 = 
+//     (was_cpu_addr == 0) ? cpu_rdata[7:0] :
+//     (was_cpu_addr == 1) ? cpu_rdata[15:8] :
+//     (was_cpu_addr == 2) ? cpu_rdata[23:16] :
+//     (was_cpu_addr == 3) ? cpu_rdata[31:24] :
+ //    8'hx;
 
 fplp_cpu  cpu_top (
-     .clk(clk) ,.rst_n(rst_n)
+     .clk(clk) ,.rst_n(rst_n) ,.stall(stall) ,.cpu_ready(cpu_ready)
     ,.running(running)
     ,.global_time(global_time)
     ,.thread_timing(thread_timing)
@@ -150,9 +156,9 @@ fplp_cpu  cpu_top (
     ,.cmd_force_now(cmd_force_now)
     ,.cmd_force_future(cmd_force_future)
 
-    ,.cpu_addr(cpu_addr_a)
+    ,.cpu_addr(cpu_addr)
     ,.cpu_rd(cpu_rd)
-    ,.cpu_rdata(cpu_rdata8)
+    ,.cpu_rdata(cpu_rdata)
 
     ,.paddr(paddr)
     ,.penable(penable)

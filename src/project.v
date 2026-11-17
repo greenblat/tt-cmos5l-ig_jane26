@@ -31,7 +31,7 @@ assign pin_in[11:8] = ui_in[7:4];
 
 assign uio_out = pin_out[7:0];
 assign pin_in[7:0] = uio_in[7:0];
-assign uio_oe =  tri_out[7:0];
+assign uio_oe =  ~tri_out[7:0];
 
 fplp_cluster #(.BAUDRATE(50)) fplp_cluster (
      .clk(clk)

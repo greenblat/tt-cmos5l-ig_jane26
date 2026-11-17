@@ -42,6 +42,7 @@ wire  drct_wr;
 wire   [31:0] drct_rdata;
 
 
+wire drct_ready;
 
 ig_debuguart #(.BAUDRATE(BAUDRATE)) ig_debuguart (.clk(clk) ,.reset_n(rst_n)
     ,.rxd   (rxd_i  )
@@ -66,6 +67,7 @@ ig_debuguart #(.BAUDRATE(BAUDRATE)) ig_debuguart (.clk(clk) ,.reset_n(rst_n)
     ,.drct_wdata(drct_wdata)
     ,.drct_wr(drct_wr)
     ,.drct_rdata(drct_rdata)
+    ,.drct_ready(drct_ready)
 
 );
 
@@ -208,7 +210,7 @@ fplp_rgf fplp_rgf (.pclk(clk),.presetn(rst_n)
     ,.param3()
 );
 
-wire [31:0] qq;
+wire [7:0] cpu_rdata;
 wire [15:0] cpu_addr;
 wire cpu_rd;
 
@@ -218,9 +220,13 @@ wire  pin_event_vld;
 
 
 wire cmd_vld;
+wire drct_access = uart2extram && (drct_wr || drct_rd);
+wire cpu_ready;
 cpu_cluster cpu_cluster (
      .clk(clk) ,.rst_n(rst_n)
     ,.softreset(ctrl_softreset)
+    ,.stall(1'b0)
+    ,.cpu_ready(cpu_ready)
     ,.pwrite(fplp_pwrite),.paddr(fplp_paddr[15:0]),.psel(fplp_psel),.penable(fplp_penable)
     ,.prdata(fplp_prdata),.pwdata(fplp_pwdata[15:0]),.pstrb(fplp_pstrb)
     ,.pready(1'b1),.pslverr(1'b0)
@@ -242,7 +248,7 @@ cpu_cluster cpu_cluster (
 
     ,.cpu_rd(cpu_rd)
     ,.cpu_addr(cpu_addr)
-    ,.cpu_rdata(qq)
+    ,.cpu_rdata(cpu_rdata)
 
     ,.prog_vld(prog_vld)
     ,.prog_thread(prog_thread)
@@ -259,27 +265,23 @@ cpu_cluster cpu_cluster (
     ,.io_events(io_events)
 );
 
-wire drct_access = uart2extram && (drct_wr || drct_rd);
-wire wen = ~(drct_wr && uart2extram);
-wire cen = ~(cpu_rd || drct_access);
 
-// wire [31:0] wmask = drct_access ? 32'hffffffff : cpu_wmask ;
-wire [31:0] wmask = 32'hffffffff ;
-wire [13:0] aa = drct_access ? drct_addr[13:0] : cpu_addr[13:0] ;
-wire [31:0] dd = drct_wdata;
+wire ramx_vld;
+wire [127:0] wideq;
+ram_subsystem ram_subsystem (
+     .clk(clk),.rst_n(rst_n)
+     ,.drct_access(drct_access)
+     ,.drct_wr(drct_wr)
+     ,.drct_addr(drct_addr[15:0])
+     ,.drct_wdata(drct_wdata)
+     ,.drct_rdata(drct_rdata)
+     ,.drct_ready(drct_ready)
 
-assign drct_rdata = qq;
-
-ram_32bit_4096addr ram (
-     .CK(clk)
-    ,.D(dd[31:0])
-    ,.Q(qq[31:0])
-    ,.A(aa[13:0])
-    ,.WEN(wen)
-    ,.CEN(cen)
-    ,.WMASK(wmask)
+     ,.cpu_addr(cpu_addr[15:0])
+     ,.cpu_rd(cpu_rd)
+     ,.cpu_rdata(cpu_rdata)
+     ,.cpu_ready(cpu_ready)
 );
-
 
 io_cluster io_cluster (
      .clk(clk) ,.rst_n(rst_n)

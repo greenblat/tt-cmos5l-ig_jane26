@@ -24,6 +24,8 @@
 // fewer cycles than its byte count; only control transfers lose a cycle.
 
 module fplp_cpu (input clk, input rst_n
+    ,input stall // shared RAM is owned by another master this cycle
+    ,input cpu_ready // cpu_rdata is a valid response to an outstanding read
     ,input [9:0] global_time
 
     ,output reg  [15:0] paddr
@@ -102,7 +104,8 @@ wire ex = running && (state==S_EXEC);
 wire apb_opcode = ((popcoda & 8'hfe)==8'h2e) || ((popcoda & 8'hfe)==8'h30);
 wire apb_stall  = ex && apb_opcode && (apbst!=0);
 
-wire go = ex && !apb_stall;          // instruction in popcoda executes now
+wire fetch_valid;
+wire go = ex && !apb_stall && !stall && fetch_valid;          // instruction in popcoda executes now
 
 // ---------------------------------------------------------------------------
 // decoder (all *_code outputs are already qualified with 'go')
@@ -206,11 +209,37 @@ fplpx_decoder fplpx_decoder (.valid(go),.opcode(popcoda)
    ,.read_pins_code(read_pins_code)
 );
 
+// One outstanding fetch, plus one response buffer. cpu_rd is a request pulse;
+// cpu_ready qualifies its returned byte, even if stall is asserted meanwhile.
+reg fetch_pending;
+reg [7:0] saved_rdata;
+reg saved_rdata_valid;
+wire response_valid = fetch_pending && cpu_ready;
+assign fetch_valid = saved_rdata_valid || response_valid;
+wire [7:0] fetch_rdata = saved_rdata_valid ? saved_rdata : cpu_rdata;
+wire consume_fetch = running && !stall && (waiting==0) && fetch_valid &&
+    ((state==S_FETCH1)||(state==S_THIRD)||((state==S_EXEC)&&!apb_stall));
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        fetch_pending <= 0;
+        saved_rdata <= 0;
+        saved_rdata_valid <= 0;
+    end else begin
+        if (cpu_rd) fetch_pending <= 1;
+        else if (response_valid) fetch_pending <= 0;
+        if (consume_fetch) saved_rdata_valid <= 0;
+        else if (response_valid) begin
+            saved_rdata <= cpu_rdata;
+            saved_rdata_valid <= 1;
+        end
+    end
+end
+
 // ---------------------------------------------------------------------------
 // operand byte / variables
 // ---------------------------------------------------------------------------
-wire [9:0] cpu_rdata10 = {2'b0,cpu_rdata};
-wire [8:0]  full_addr_field = {addr_field,cpu_rdata};
+wire [9:0] fetch_rdata10 = {2'b0,fetch_rdata};
+wire [8:0]  full_addr_field = {addr_field,fetch_rdata};
 wire        varwrite = store_code || stori_code;
 wire [15:0] wdata    = stori_code ? {12'd0,lit_field} : opstack0;
 
@@ -222,12 +251,12 @@ variables variables (.clk(clk),.rst_n(rst_n)
 // ---------------------------------------------------------------------------
 // stack
 // ---------------------------------------------------------------------------
-wire third_push = running && (state==S_THIRD);
+wire third_push = running && (state==S_THIRD) && !stall && fetch_valid;
 wire apb_rd_done = (apbst==4) && pready;
 wire apb_push   = running && (state==S_APBRD) && apb_rd_done;
 
 wire [15:0] next_opstack0 =
-    third_push         ? {cpu_rdata,popcodb} :
+    third_push         ? {fetch_rdata,popcodb} :
     apb_push           ? prdata[15:0] :
     add_code           ? (opstack0 + opstack1) :
     sub_code           ? (opstack0 - opstack1) :
@@ -243,7 +272,7 @@ wire [15:0] next_opstack0 =
     thread_timing_code ? {6'd0,timing} :
     addi_code          ? (opstack0 + {{12{indx_field[3]}},indx_field[3:0]}) :
     select_code        ? ((opstack0 != 0) ? opstack1 : opstack2) :
-    loadi8_code        ? {8'd0,cpu_rdata} :
+    loadi8_code        ? {8'd0,fetch_rdata} :
     loadi_code         ? {12'd0,indx_field[3:0]} :
     load_code          ? varrdata :
     shiftl_code        ? (opstack0 >> indx_field[3:0]) :
@@ -310,7 +339,7 @@ wire [8:0] pc_p2 = pc + 9'd2;
 wire [8:0] pc_p3 = pc + 9'd3;
 wire [8:0] skip_target = pc_p1 + {7'd0,skip_field};
 
-// instructions that make the byte already in cpu_rdata useless as next opcode
+// instructions that make the byte already in fetch_rdata useless as next opcode
 wire redirect = call_code || jump_taken || return_code || skip_taken
     || (second_flag && !loadi16_code && !yield_code && !apbrd_code);
 
@@ -340,12 +369,12 @@ always @(*) begin
     endcase
 end
 
-assign cpu_addr = {6'd0,fetch_slot,1'b0};
-assign cpu_rd = running && (waiting==0) && (
+assign cpu_addr = {7'd0,fetch_slot};
+assign cpu_rd = running && !stall && (waiting==0) && (
        (state==S_FETCH0)
-    || (state==S_FETCH1)
-    || ((state==S_EXEC) && !no_fetch)
-    || (state==S_THIRD)
+    || ((state==S_FETCH1) && fetch_valid)
+    || ((state==S_EXEC) && go && !no_fetch)
+    || ((state==S_THIRD) && fetch_valid)
     || ((state==S_APBRD) && apb_rd_done)
     );
 
@@ -408,23 +437,27 @@ always @(posedge clk or negedge rst_n) begin
             end
         end else if (waiting != 0) begin
             waiting <= waiting - 1;
+        end else if (stall && (state!=S_APBRD)) begin
+            // Hold PC, opcode and execution state; decoded side effects are gated.
         end else begin
             case (state)
             S_FETCH0: state <= S_FETCH1;
 
-            S_FETCH1: begin
-                popcoda <= cpu_rdata;
+            S_FETCH1: if (fetch_valid) begin
+                popcoda <= fetch_rdata;
                 state <= S_EXEC;
             end
 
-            S_THIRD: begin
+            S_THIRD: if (fetch_valid) begin
                 pc <= pc_p3;
                 state <= S_FETCH1;
             end
 
             S_APBRD: if (apb_rd_done) begin
                 pc <= pc_p2;
-                state <= S_FETCH1;
+                // APB may finish while RAM is stolen. Commit its result once,
+                // but request the next opcode later rather than assuming a fetch.
+                state <= stall ? S_FETCH0 : S_FETCH1;
             end
 
             S_EXEC: if (go) begin
@@ -462,25 +495,25 @@ always @(posedge clk or negedge rst_n) begin
                     cmd_vld <= 1; cmd_time <= opstack0[9:0] + timing; cmd_tri_future <= 1;
                 end
                 if (io_catch_time_code) begin
-                    cmd_vld <= 1; cmd_time <= cpu_rdata10 + timing; cmd_catch_time <= 1;
+                    cmd_vld <= 1; cmd_time <= fetch_rdata10 + timing; cmd_catch_time <= 1;
                 end
                 if (io_force_future_code) begin
-                    cmd_vld <= 1; cmd_time <= cpu_rdata10 + timing;
+                    cmd_vld <= 1; cmd_time <= fetch_rdata10 + timing;
                     cmd_value <= val_field; cmd_force_future <= 1;
                 end
                 if (io_tri_future_code) begin
-                    cmd_vld <= 1; cmd_time <= cpu_rdata10 + timing; cmd_tri_future <= 1;
+                    cmd_vld <= 1; cmd_time <= fetch_rdata10 + timing; cmd_tri_future <= 1;
                 end
                 if (cpu_future_event_code) begin
                     cpu_event_vld <= 1;
                     cpu_event_timing <= timing + opstack0[8:0];
-                    cpu_event_pc <= {4'b0,cpu_rdata[7:0]};
+                    cpu_event_pc <= {4'b0,fetch_rdata[7:0]};
                     cpu_event_mode <= 2;
                     cpu_thread <= thread_field;
                 end
                 if (cpu_now_event_code) begin
                     cpu_event_vld <= 1;
-                    cpu_event_pc <= {4'b0,cpu_rdata[7:0]};
+                    cpu_event_pc <= {4'b0,fetch_rdata[7:0]};
                     cpu_event_mode <= 1;
                     cpu_thread <= thread_field;
                 end
@@ -496,14 +529,14 @@ always @(posedge clk or negedge rst_n) begin
                 end else if (apbrd_code) begin
                     state <= S_APBRD;
                 end else if (loadi16_code) begin
-                    popcodb <= cpu_rdata;
+                    popcodb <= fetch_rdata;
                     state <= S_THIRD;
                 end else if (redirect) begin
                     pc <= redirect_pc;
                     state <= S_FETCH1;
                 end else begin
                     // 1-byte instruction: the next opcode is already here
-                    popcoda <= cpu_rdata;
+                    popcoda <= fetch_rdata;
                     pc <= pc_p1;
 `ifdef SIM
                     if (not_opcode)

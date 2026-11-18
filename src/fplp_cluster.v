@@ -6,6 +6,7 @@ module fplp_cluster  #(parameter BAUDRATE=416) (input clk, input rst_n
     ,input  [11:0] pin_in
 
     ,output [31:0] leds
+    ,input [2:0] switches
 
     ,input rxd_i, output txd_o
 );
@@ -186,6 +187,7 @@ fplp_rgf fplp_rgf (.pclk(clk),.presetn(rst_n)
     ,.io_events_pulse(io_events_pulse)
     ,.bus_value(bus_value)
     ,.leds(leds)
+    ,.switches(switches)
     ,.prog_data_pulse(prog_vld)
     ,.prog_data({prog_thread,prog_pc})
     ,.fifo0(fifo0)
@@ -203,8 +205,7 @@ fplp_rgf fplp_rgf (.pclk(clk),.presetn(rst_n)
     ,.ext_event(ext_event)
     ,.ext_event_pulse(ext_event_vld)
 
-    ,.scratchpad()
-    ,.param0()
+    ,.param0()  // used to communicate
     ,.param1()
     ,.param2()
     ,.param3()
@@ -266,60 +267,60 @@ cpu_cluster cpu_cluster (
 );
 
 
-wire ramx_vld;
-wire [127:0] wideq;
-ram_subsystem ram_subsystem (
-     .clk(clk),.rst_n(rst_n)
-     ,.drct_access(drct_access)
-     ,.drct_wr(drct_wr)
-     ,.drct_addr(drct_addr[15:0])
-     ,.drct_wdata(drct_wdata)
-     ,.drct_rdata(drct_rdata)
-     ,.drct_ready(drct_ready)
+        wire ramx_vld;
+        wire [127:0] wideq;
+        ram_subsystem ram_subsystem (
+             .clk(clk),.rst_n(rst_n)
+             ,.drct_access(drct_access)
+             ,.drct_wr(drct_wr)
+             ,.drct_addr(drct_addr[15:0])
+             ,.drct_wdata(drct_wdata)
+             ,.drct_rdata(drct_rdata)
+             ,.drct_ready(drct_ready)
 
-     ,.cpu_addr(cpu_addr[15:0])
-     ,.cpu_rd(cpu_rd)
-     ,.cpu_rdata(cpu_rdata)
-     ,.cpu_ready(cpu_ready)
-);
+             ,.cpu_addr(cpu_addr[15:0])
+             ,.cpu_rd(cpu_rd)
+             ,.cpu_rdata(cpu_rdata)
+             ,.cpu_ready(cpu_ready)
+        );
 
-io_cluster io_cluster (
-     .clk(clk) ,.rst_n(rst_n)
+        io_cluster io_cluster (
+             .clk(clk) ,.rst_n(rst_n)
 
-    ,.cmd_vld(cmd_vld)
-    ,.cmd_pin(cmd_pin)
-    ,.cmd_value(cmd_value)
-    ,.cmd_time(cmd_time)
-    ,.cmd_catch_change(cmd_catch_change)
-    ,.cmd_catch_time(cmd_catch_time)
-    ,.cmd_tri_now(cmd_tri_now)
-    ,.cmd_tri_future(cmd_tri_future)
-    ,.cmd_force_now(cmd_force_now)
-    ,.cmd_force_future(cmd_force_future)
+            ,.cmd_vld(cmd_vld)
+            ,.cmd_pin(cmd_pin)
+            ,.cmd_value(cmd_value)
+            ,.cmd_time(cmd_time)
+            ,.cmd_catch_change(cmd_catch_change)
+            ,.cmd_catch_time(cmd_catch_time)
+            ,.cmd_tri_now(cmd_tri_now)
+            ,.cmd_tri_future(cmd_tri_future)
+            ,.cmd_force_now(cmd_force_now)
+            ,.cmd_force_future(cmd_force_future)
 
-    ,.enable_in_neg(enable_in_neg)
-    ,.enable_in_pos(enable_in_pos)
-    ,.enable_in_threads(enable_in_threads)
-    ,.global_time(global_time[9:0])
-    ,.io_event_vld(io_event_vld)
-    ,.io_events(io_events[15:0])
-    ,.io_event_read(io_events_pulse || ctrl_event_to_rgf || read_pins)
-    ,.io_events_count(io_events_count)
-    ,.pin_in(pin_in[11:0])
-    ,.pin_out(pin_out[11:0])
-    ,.pin_sampled(pin_sampled)
-    ,.tri_out(tri_out)
-    ,.bunched_ios(bunched_ios)
-    ,.bus_value(bus_value)
+            ,.enable_in_neg(enable_in_neg)
+            ,.enable_in_pos(enable_in_pos)
+            ,.enable_in_threads(enable_in_threads)
+            ,.global_time(global_time[9:0])
+            ,.io_event_vld(io_event_vld)
+            ,.io_events(io_events[15:0])
+            ,.io_event_read(io_events_pulse || ctrl_event_to_rgf || read_pins)
+            ,.io_events_count(io_events_count)
+            ,.pin_in(pin_in[11:0])
+            ,.pin_out(pin_out[11:0])
+            ,.pin_sampled(pin_sampled)
+            ,.tri_out(tri_out)
+            ,.bunched_ios(bunched_ios)
+            ,.bus_value(bus_value)
 
-    ,.pin_event(pin_event)
-    ,.pin_event_timing(pin_event_timing)
-    ,.pin_event_vld(pin_event_vld)
-);
+            ,.pin_event(pin_event)
+            ,.pin_event_timing(pin_event_timing)
+            ,.pin_event_vld(pin_event_vld)
+        );
 
 
-wire [63:0]  sign_version = 64'hb4d4c94ade151126 ;
-endmodule
-// FROMFILE b4d4c 94ade :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_cluster.v
+        wire [63:0]  sign_version = 64'hb4d4c94ade151126 ;
+        endmodule
+        // FROMFILE b4d4c 94ade :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_cluster.v
 
 

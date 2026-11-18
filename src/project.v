@@ -17,6 +17,7 @@ module tt_um_greenblat_protocoler (
     input  wire       rst_n     // reset_n - low to reset
 );
 
+wire [2:0] switches = ui_in[3:1];
 wire [31:0] leds;
 wire [11:0] pin_in;
 wire [11:0] pin_out;
@@ -36,6 +37,7 @@ assign uio_oe =  ~tri_out[7:0];
 fplp_cluster #(.BAUDRATE(50)) fplp_cluster (
      .clk(clk)
     ,.leds(leds[31:0])
+    ,.switches(switches)
     ,.pin_in(pin_in[11:0])
     ,.pin_out(pin_out[11:0])
     ,.tri_out(tri_out[11:0])

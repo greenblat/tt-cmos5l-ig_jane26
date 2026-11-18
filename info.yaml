@@ -46,34 +46,34 @@ project:
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).
 pinout:
   # Inputs
-  ui[0]: ""
-  ui[1]: ""
-  ui[2]: ""
-  ui[3]: ""
-  ui[4]: ""
-  ui[5]: ""
-  ui[6]: ""
-  ui[7]: ""
+  ui[0]: "rxd_i"
+  ui[1]: "switches[0]"
+  ui[2]: "switches[1]"
+  ui[3]: "switches[2]"
+  ui[4]: "pin_in[8]"
+  ui[5]: "pin_in[9]"
+  ui[6]: "pin_in[10]"
+  ui[7]: "pin_in[11]"
 
   # Outputs
-  uo[0]: ""
-  uo[1]: ""
-  uo[2]: ""
-  uo[3]: ""
-  uo[4]: ""
-  uo[5]: ""
-  uo[6]: ""
-  uo[7]: ""
+  uo[0]: "txd_o"
+  uo[1]: "led[0]"
+  uo[2]: "led[1]"
+  uo[3]: "led[2]"
+  uo[4]: "led[3]"
+  uo[5]: "pin_out[9]"
+  uo[6]: "pin_out[10]"
+  uo[7]: "pin_out[11]"
 
   # Bidirectional pins
-  uio[0]: ""
-  uio[1]: ""
-  uio[2]: ""
-  uio[3]: ""
-  uio[4]: ""
-  uio[5]: ""
-  uio[6]: ""
-  uio[7]: ""
+  uio[0]: "pin_in[0] pin_out[0]"
+  uio[1]: "pin_in[1] pin_out[1]"
+  uio[2]: "pin_in[2] pin_out[2]"
+  uio[3]: "pin_in[3] pin_out[3]"
+  uio[4]: "pin_in[4] pin_out[4]"
+  uio[5]: "pin_in[5] pin_out[5]"
+  uio[6]: "pin_in[6] pin_out[6]"
+  uio[7]: "pin_in[7] pin_out[7]"
 
 # Do not change!
 yaml_version: 6

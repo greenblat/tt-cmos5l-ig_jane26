@@ -1,4 +1,4 @@
-`default_nettype wire
+
 `timescale 1ns / 1ps
 module fplp_rgf (input pclk, input presetn, input softreset
     ,input psel, input penable, input pwrite, input [4-1:0] pstrb, input [8-1:0] paddr, input [32-1:0] pwdata, output [32-1:0] prdata,output [32-1:0] prdata_wire
@@ -18,7 +18,7 @@ module fplp_rgf (input pclk, input presetn, input softreset
     ,input [3:0] io_events_count
     ,output [11:0] bus_value
     ,output [31:0] leds
-    ,output [31:0] scratchpad
+    ,input [2:0] switches
     ,output [15:0] prog_data
     ,output prog_data_pulse
     ,output [15:0] param0
@@ -70,7 +70,7 @@ fplp_rgf_ram rgf (.pclk(pclk),.presetn(presetn),.softreset(softreset),.pwrite(i_
     ,.io_events_count(io_events_count)
     ,.bus_value(bus_value)
     ,.leds(leds)
-    ,.scratchpad(scratchpad)
+    ,.switches(switches)
     ,.prog_data(prog_data)
     ,.prog_data_pulse(prog_data_pulse)
     ,.param0(param0)
@@ -93,10 +93,7 @@ fplp_rgf_ram rgf (.pclk(pclk),.presetn(presetn),.softreset(softreset),.pwrite(i_
 assign ctrl_operate = control[0];
 assign ctrl_softreset = control[1];
 assign ctrl_event_to_rgf = control[2];
-wire [63:0]  sign_version = 64'h7849d38289151126 ;
 endmodule
-// FROMFILE 7849d 38289 :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_rgf.v
-
 `timescale 1ns / 1ps
 module fplp_rgf_ram (
     input pclk,input presetn, input softreset, input pwrite, input pread, input penable
@@ -120,7 +117,7 @@ module fplp_rgf_ram (
     ,input [3:0] io_events_count
     ,output reg [11:0] bus_value
     ,output reg [31:0] leds
-    ,output reg [31:0] scratchpad
+    ,input [2:0] switches
     ,output reg [15:0] prog_data
     ,output prog_data_pulse
     ,output reg [15:0] param0
@@ -160,7 +157,7 @@ assign prdata_wire =
     (mpaddr == 'h2c) ? {28'b0,io_events_count} :
     (mpaddr == 'h30) ? {20'b0,bus_value} :
     (mpaddr == 'h34) ? leds[31:0] :
-    (mpaddr == 'h38) ? scratchpad[31:0] :
+    (mpaddr == 'h38) ? {29'b0,switches} :
     (mpaddr == 'h3c) ? {16'b0,prog_data} :
     (mpaddr == 'h40) ? {16'b0,param0} :
     (mpaddr == 'h44) ? {16'b0,param1} :
@@ -196,7 +193,6 @@ always @(posedge pclk or negedge presetn) begin
         uart_command <= 17'h0;
         bus_value <= 12'h0;
         leds <= 32'h0;
-        scratchpad <= 32'h0;
         prog_data <= 16'h0;
         param0 <= 16'h0;
         param1 <= 16'h0;
@@ -214,7 +210,6 @@ always @(posedge pclk or negedge presetn) begin
         uart_command <= 17'h0;
         bus_value <= 12'h0;
         leds <= 32'h0;
-        scratchpad <= 32'h0;
         prog_data <= 16'h0;
         param0 <= 16'h0;
         param1 <= 16'h0;
@@ -232,7 +227,6 @@ always @(posedge pclk or negedge presetn) begin
         if (mpaddr == 'h20) uart_command <= (uart_command & ~mask[16:0]) | (wdata[16:0] & mask[16:0]);
         if (mpaddr == 'h30) bus_value <= (bus_value & ~mask[11:0]) | (wdata[11:0] & mask[11:0]);
         if (mpaddr == 'h34) leds <= (leds & ~mask) | (wdata & mask);
-        if (mpaddr == 'h38) scratchpad <= (scratchpad & ~mask) | (wdata & mask);
         if (mpaddr == 'h3c) prog_data <= (prog_data & ~mask[15:0]) | (wdata[15:0] & mask[15:0]);
         if (mpaddr == 'h40) param0 <= (param0 & ~mask[15:0]) | (wdata[15:0] & mask[15:0]);
         if (mpaddr == 'h44) param1 <= (param1 & ~mask[15:0]) | (wdata[15:0] & mask[15:0]);
@@ -283,7 +277,4 @@ wire ext_event_wr_sel = pwrite && (mpaddr=='h68);
 reg ext_event_wr_pulse_reg; always @(posedge pclk or negedge presetn)  if (!presetn) ext_event_wr_pulse_reg<=0; else ext_event_wr_pulse_reg <= ext_event_wr_sel;
 assign ext_event_pulse = ext_event_wr_pulse_reg;
 
-wire [63:0]  sign_version = 64'hdff6887a53151126 ;
 endmodule
-// FROMFILE dff68 87a53 :: /Users/iliagreenblat/projects/fplp/verila/src/fplp_rgf.v
-

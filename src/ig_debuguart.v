@@ -284,7 +284,7 @@ always @(posedge clk) begin
     end
 end
 
-wire [8:0] [7:0]  RTU26 = " 62UTR**\n";
+wire [8:0] [7:0]  RTU26 = "\n62ENAJ*\n";
 
 wire [7:0] echobyte;
 wire [7:0] charA = RTU26[evenann];
@@ -311,7 +311,8 @@ wire [31:0] prdata_fifo_din =
     uart2extram_d4 ? qqdata : 
     s_prdata;
 
-wire prdata_fifo_vldin  = prdata_fifo_write || uart2extram_d4; 
+reg was_prdata_fifo_write; always @(posedge clk) was_prdata_fifo_write <= prdata_fifo_write;
+wire prdata_fifo_vldin  = was_prdata_fifo_write || uart2extram_d4; 
 
 wire rdata_fifo_full;
 syncfifo_v2 #(.WID(32),.DEPTH(4)) prdata_fifo (
